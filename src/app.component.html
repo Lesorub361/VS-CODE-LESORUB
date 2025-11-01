@@ -1,0 +1,308 @@
+<style>
+  .gutter {
+    background-color: #e2e8f0;
+    position: relative;
+    z-index: 10;
+    transition: background-color 0.2s ease;
+  }
+  .dark .gutter {
+     background-color: #1e293b; /* slate-800 */
+  }
+  .gutter:hover {
+    background-color: #38bdf8; /* sky-400 */
+  }
+  .gutter.gutter-horizontal {
+    cursor: col-resize;
+    width: 8px;
+  }
+  .gutter.gutter-vertical {
+    cursor: row-resize;
+    height: 8px;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  .dark ::-webkit-scrollbar-track { background: #0f172a; } /* slate-900 */
+  .light ::-webkit-scrollbar-track { background: #f1f5f9; } /* slate-100 */
+  ::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 4px; } /* slate-400 */
+  .dark ::-webkit-scrollbar-thumb { background-color: #475569; } /* slate-600 */
+  ::-webkit-scrollbar-thumb:hover { background-color: #64748b; } /* slate-500 */
+  .dark ::-webkit-scrollbar-thumb:hover { background-color: #64748b; } /* slate-500 */
+
+
+  .command-palette-backdrop { animation: fadeIn 0.1s ease-out; }
+  .command-palette { animation: slideIn 0.1s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+</style>
+
+<div class="h-screen w-screen flex flex-col font-sans" [class]="theme()">
+<div class="h-full w-full flex flex-col bg-slate-50 dark:bg-black text-slate-800 dark:text-slate-300">
+
+  <!-- Header -->
+  <header class="flex-shrink-0 h-12 bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4">
+    <div class="flex items-center gap-2">
+       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-sky-500"><path d="M13 10V3L4 14H11V21L20 11H13Z"></path></svg>
+       <span class="font-bold text-lg text-slate-900 dark:text-white">{{ title }}</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <button (click)="forcePreviewRefresh()" class="flex items-center gap-2 px-3 py-1.5 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 rounded-md transition-colors text-sm font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12 2C17.52 2 22 6.48 22 12C22 17.52 17.52 22 12 22C6.48 22 2 17.52 2 12C2 9.49393 2.92055 7.21526 4.49593 5.50407L5.91015 6.91828C4.73307 8.24353 4 9.99359 4 12C4 16.42 7.58 20 12 20C16.42 20 20 16.42 20 12C20 7.58 16.42 4 12 4V8L7 5L12 2Z"></path></svg>
+        Run
+      </button>
+      <button (click)="toggleTheme()" title="Переключить тему" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+        @if(theme() === 'dark') {
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22ZM12 20V4C16.4183 4 20 7.58172 20 12C20 16.4183 16.4183 20 12 20Z"></path></svg>
+        } @else {
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M12 16a4 4 0 100-8 4 4 0 000 8zm0-10a1 1 0 011 1v1a1 1 0 11-2 0V7a1 1 0 011-1zm0 12a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-6.364-8.636a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zm12.728 0a1 1 0 010 1.414l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM4.929 17.657a1 1 0 010-1.414l.707-.707a1 1 0 111.414 1.414l-.707.707a1 1 0 01-1.414 0zm12.728 0a1 1 0 01-1.414 0l-.707-.707a1 1 0 111.414-1.414l.707.707a1 1 0 010 1.414zM4 11H3a1 1 0 110-2h1a1 1 0 110 2zm16 0h-1a1 1 0 110-2h1a1 1 0 110 2z"></path></svg>
+        }
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- Activity Bar -->
+    <div class="w-16 bg-slate-100 dark:bg-slate-900 p-2 flex flex-col items-center gap-2 border-r border-slate-200 dark:border-slate-800 flex-shrink-0">
+      <button (click)="isSidebarVisible.set(!isSidebarVisible())" class="p-2 w-full rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" title="Скрыть/показать панель">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto"><path d="M2 6.00092C2 5.44863 2.44772 5.00092 3 5.00092H21C21.5523 5.00092 22 5.44863 22 6.00092C22 6.5532 21.5523 7.00092 21 7.00092H3C2.44772 7.00092 2 6.5532 2 6.00092ZM2 12.0009C2 11.4486 2.44772 11.0009 3 11.0009H21C21.5523 11.0009 22 11.4486 22 12.0009C22 12.5532 21.5523 13.0009 21 13.0009H3C2.44772 13.0009 2 12.5532 2 12.0009ZM3 17.0009C2.44772 17.0009 2 17.4486 2 18.0009C2 18.5532 2.44772 19.0009 3 19.0009H15C15.5523 19.0009 16 18.5532 16 18.0009C16 17.4486 15.5523 17.0009 15 17.0009H3Z"></path></svg>
+      </button>
+      <button (click)="isCommandPaletteOpen.set(true)" class="p-2 w-full rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors" title="Палитра команд">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto"><path d="M4 8H20V10H4V8ZM4 14H20V16H4V14Z"></path></svg>
+      </button>
+      <div class="my-2 w-full border-b border-slate-300 dark:border-slate-700"></div>
+      <button (click)="activeView.set('explorer')" class="p-2 w-full rounded-lg transition-colors relative" [class]="activeView() === 'explorer' ? 'bg-slate-200 dark:bg-slate-800' : 'hover:bg-slate-200 dark:hover:bg-slate-800'" title="Проводник">
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-sky-500 rounded-r-full" [class.hidden]="activeView() !== 'explorer'"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto" [class.text-sky-500]="activeView() === 'explorer'"><path d="M3 3C3 2.44772 3.44772 2 4 2H11L13 4H20C20.5523 4 21 4.44772 21 5V20C21 20.5523 20.5523 21 20 21H4C3.44772 21 3 20.5523 3 20V3Z"></path></svg>
+      </button>
+      <button (click)="setActiveAiView('search')" class="p-2 w-full rounded-lg transition-colors relative" [class]="isAiPaneVisible() && activeAiView() === 'search' ? 'bg-slate-200 dark:bg-slate-800' : 'hover:bg-slate-200 dark:hover:bg-slate-800'" title="AI-исследователь">
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-sky-500 rounded-r-full" [class.hidden]="!isAiPaneVisible() || activeAiView() !== 'search'"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto" [class.text-sky-500]="isAiPaneVisible() && activeAiView() === 'search'"><path d="M18.031 16.6168L22.3137 20.8995L20.8995 22.3137L16.6168 18.031C15.0769 19.263 13.124 20 11 20C6.032 20 2 15.968 2 11C2 6.032 6.032 2 11 2C15.968 2 20 6.032 20 11C20 13.124 19.263 15.0769 18.031 16.6168ZM16.0247 15.8748C17.2475 14.6146 18 12.8956 18 11C18 7.1325 14.8675 4 11 4C7.1325 4 4 7.1325 4 11C4 14.8675 7.1325 18 11 18C12.8956 18 14.6146 17.2475 15.8748 16.0247L16.0247 15.8748Z"></path></svg>
+      </button>
+      <button (click)="setActiveAiView('ai')" class="p-2 w-full rounded-lg transition-colors relative" [class]="isAiPaneVisible() && activeAiView() === 'ai' ? 'bg-slate-200 dark:bg-slate-800' : 'hover:bg-slate-200 dark:hover:bg-slate-800'" title="AI Помощник">
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-sky-500 rounded-r-full" [class.hidden]="!isAiPaneVisible() || activeAiView() !== 'ai'"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto" [class.text-sky-500]="isAiPaneVisible() && activeAiView() === 'ai'"><path d="M13 10V3L4 14H11V21L20 11H13Z"></path></svg>
+      </button>
+      <button (click)="activeView.set('image-analyzer')" class="p-2 w-full rounded-lg transition-colors relative" [class]="activeView() === 'image-analyzer' ? 'bg-slate-200 dark:bg-slate-800' : 'hover:bg-slate-200 dark:hover:bg-slate-800'" title="Анализатор изображений">
+        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-sky-500 rounded-r-full" [class.hidden]="activeView() !== 'image-analyzer'"></div>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto" [class.text-sky-500]="activeView() === 'image-analyzer'"><path d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3ZM5 19V5H19V19H5ZM15 13.5L12.5 10.5L10 14L8 12L6 15H18L15 13.5Z"></path></svg>
+      </button>
+      <div class="mt-auto flex flex-col items-center gap-2 w-full">
+        <button (click)="activeView.set('settings')" class="p-2 w-full rounded-lg transition-colors relative" [class]="activeView() === 'settings' ? 'bg-slate-200 dark:bg-slate-800' : 'hover:bg-slate-200 dark:hover:bg-slate-800'" title="Настройки">
+            <div class="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-sky-500 rounded-r-full" [class.hidden]="activeView() !== 'settings'"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 mx-auto" [class.text-sky-500]="activeView() === 'settings'"><path d="M12 1L21.5 6.5V17.5L12 23L2.5 17.5V6.5L12 1ZM12 3.311L4.5 7.653V16.347L12 20.689L19.5 16.347V7.653L12 3.311ZM12 16C9.79086 16 8 14.2091 8 12C8 9.79086 9.79086 8 12 8C14.2091 8 16 9.79086 16 12C16 14.2091 14.2091 16 12 16ZM12 14C13.1046 14 14 13.1046 14 12C14 10.8954 13.1046 10 12 10C10.8954 10 10 10.8954 10 12C10 13.1046 10.8954 14 12 14Z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar-pane" class="bg-slate-100 dark:bg-slate-900 flex-col" [class.flex]="isSidebarVisible()" [class.hidden]="!isSidebarVisible()">
+      <div class="p-4 h-full flex flex-col">
+        @switch (activeView()) {
+          @case ('explorer') {
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Проводник</h2>
+                <div class="flex items-center gap-2">
+                    <button (click)="startCreatingFile()" title="Новый файл" class="p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M15 4H5V20H19V8H15V4ZM3 2.9918C3 2.44405 3.44749 2 3.9985 2H16L21 7V20.9925C21 21.5489 20.5551 22 20.0066 22H3.9934C3.44476 22 3 21.5501 3 20.9991V2.9918ZM13 12V9H11V12H8V14H11V17H13V14H16V12H13Z"></path></svg>
+                    </button>
+                    <label for="file-upload" class="cursor-pointer p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-md transition-colors" title="Загрузить файл">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19ZM13 9V16H11V9H4L12 1L20 9H13Z"></path></svg>
+                    </label>
+                    <input type="file" id="file-upload" class="hidden" multiple (change)="handleFileUpload($event)">
+                </div>
+            </div>
+            <div class="flex flex-col gap-1 overflow-y-auto flex-grow -mr-2 pr-2">
+            @if(isCreatingFile()){
+                <div class="px-1 py-1">
+                    <input #newFileInput type="text" [(ngModel)]="newFileName"
+                            (keydown.enter)="confirmCreateFile()" (blur)="cancelCreateFile()"
+                            class="w-full bg-slate-200 dark:bg-slate-700 p-2 rounded font-sans text-sm border border-sky-500 focus:outline-none"
+                            placeholder="имя.расширение">
+                </div>
+            }
+            @for (file of files(); track file.name) {
+                <div (click)="setActiveFile(file)"
+                     class="cursor-pointer text-left p-2 rounded-md flex items-center justify-between group transition-colors"
+                     [class]="(activeFile()?.name === file.name ? 'bg-sky-500 text-white dark:bg-sky-600' : 'hover:bg-slate-200 dark:hover:bg-slate-800')">
+                    <span class="truncate font-mono text-sm">{{ file.name }}</span>
+                    <button (click)="deleteFile(file, $event)" class="opacity-0 group-hover:opacity-100 p-1 rounded-full hover:bg-red-500/20 text-slate-500 dark:text-slate-300 hover:text-red-500 dark:hover:text-red-400 transition-opacity" title="Удалить файл">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12.0007 10.5865L16.9504 5.63672L18.3646 7.05093L13.4149 12.0007L18.3646 16.9504L16.9504 18.3646L12.0007 13.4149L7.05093 18.3646L5.63672 16.9504L10.5865 12.0007L5.63672 7.05093L7.05093 5.63672L12.0007 10.5865Z"></path></svg>
+                    </button>
+                </div>
+            }
+            </div>
+          }
+          @case ('image-analyzer') {
+            <app-image-analyzer></app-image-analyzer>
+          }
+          @case ('settings') {
+            <h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Настройки</h2>
+            <div class="space-y-4">
+              <div>
+                <label for="api-key" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Gemini API Key</label>
+                <input type="password" id="api-key" [ngModel]="apiKey()" (ngModelChange)="apiKey.set($event)" placeholder="Введите ваш ключ API" class="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg font-mono text-sm border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <p class="text-xs text-slate-500 mt-1">Ваш ключ хранится только в локальном хранилище вашего браузера.</p>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div id="main-content-wrapper" class="flex flex-1 overflow-hidden">
+      <div id="editor-and-preview-block" class="flex flex-col flex-1 overflow-hidden">
+        <!-- Editor & Preview Pane -->
+        <div id="upper-pane" class="flex flex-1 overflow-hidden">
+          <!-- Editor Area -->
+          <div id="editor-area-wrapper" class="flex flex-col flex-1 bg-white dark:bg-slate-900 overflow-hidden">
+            <!-- Open File Tabs -->
+            <div class="flex-shrink-0 flex items-center border-b border-slate-200 dark:border-slate-800 h-10 overflow-x-auto">
+              @for (file of openFiles(); track file.name) {
+                <button (click)="setActiveFile(file)" class="flex items-center gap-2 px-4 h-full border-r border-slate-200 dark:border-slate-800 transition-colors"
+                  [class]="activeFile()?.name === file.name ? 'bg-white dark:bg-slate-900' : 'bg-slate-100 dark:bg-slate-900/50 hover:bg-slate-200 dark:hover:bg-slate-800'">
+                  <span class="font-mono text-sm" [class.text-sky-500]="activeFile()?.name === file.name">{{ file.name }}</span>
+                  <span (click)="closeFile(file, $event)" class="p-0.5 rounded-full hover:bg-slate-300 dark:hover:bg-slate-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5"><path d="M12.0007 10.5865L16.9504 5.63672L18.3646 7.05093L13.4149 12.0007L18.3646 16.9504L16.9504 18.3646L12.0007 13.4149L7.05093 18.3646L5.63672 16.9504L10.5865 12.0007L5.63672 7.05093L7.05093 5.63672L12.0007 10.5865Z"></path></svg>
+                  </span>
+                </button>
+              }
+            </div>
+            <!-- Monaco Editor -->
+            <div class="flex-1 overflow-hidden relative">
+              @if(activeFile(); as file) {
+                  <app-monaco-editor [language]="file.language" [content]="file.content" [theme]="theme()" (contentChange)="updateActiveFileContent($event)" (contextMenuAction)="handleEditorContextMenu($event)"></app-monaco-editor>
+              } @else {
+                <div class="w-full h-full flex items-center justify-center text-slate-500">Выберите файл для редактирования</div>
+              }
+            </div>
+          </div>
+          <!-- Preview Pane -->
+          <div id="preview-pane" class="flex-1 bg-white">
+            <iframe #previewIframe title="Preview" class="w-full h-full border-none" [srcdoc]="iframeSrcDoc()"></iframe>
+          </div>
+        </div>
+        <!-- Console Pane -->
+        <div id="console-pane" class="flex-shrink-0" [class.hidden]="!isConsoleVisible()">
+          <app-console [logs]="consoleLogs()" (clear)="consoleLogs.set([])"></app-console>
+        </div>
+      </div>
+       <!-- AI Pane -->
+      <div id="ai-pane" class="flex-col bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800" [class.flex]="isAiPaneVisible()" [class.hidden]="!isAiPaneVisible()">
+         <div class="p-4 h-full flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                <div class="flex items-center border-b border-slate-200 dark:border-slate-700">
+                    <button (click)="activeAiView.set('ai')" class="px-4 py-2 text-sm font-medium transition-colors -mb-px" [class]="activeAiView() === 'ai' ? 'border-b-2 border-sky-500 text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-b-2 border-transparent'">
+                        AI Помощник
+                    </button>
+                    <button (click)="activeAiView.set('search')" class="px-4 py-2 text-sm font-medium transition-colors -mb-px" [class]="activeAiView() === 'search' ? 'border-b-2 border-sky-500 text-slate-900 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 border-b-2 border-transparent'">
+                        AI-исследователь
+                    </button>
+                </div>
+                <button (click)="isAiPaneVisible.set(false)" title="Скрыть панель" class="p-1.5 -mr-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12.0007 10.5865L16.9504 5.63672L18.3646 7.05093L13.4149 12.0007L18.3646 16.9504L16.9504 18.3646L12.0007 13.4149L7.05093 18.3646L5.63672 16.9504L10.5865 12.0007L5.63672 7.05093L7.05093 5.63672L12.0007 10.5865Z"></path></svg>
+                </button>
+            </div>
+            <div class="flex-grow overflow-hidden pt-2">
+                 @switch (activeAiView()) {
+                    @case('search') {
+                        <app-ai-search></app-ai-search>
+                    }
+                    @case('ai') {
+                        <div class="flex flex-col h-full overflow-hidden">
+                            <div class="flex-grow overflow-y-auto pr-2 flex flex-col gap-4">
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Попросите AI изменить код или сгенерировать новый. Вы также можете выделить код в редакторе, нажать правую кнопку мыши и выбрать действие.</p>
+                                <textarea [(ngModel)]="aiPrompt" placeholder="например, 'добавь анимацию на кнопку'"
+                                    class="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg font-mono text-sm resize-none border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500" rows="4"></textarea>
+                                
+                                <div class="flex items-center gap-2">
+                                    <label for="model-select" class="text-sm font-medium text-slate-600 dark:text-slate-400">Модель:</label>
+                                    <select id="model-select" [(ngModel)]="selectedModel" class="flex-grow bg-slate-50 dark:bg-slate-800 p-1.5 rounded-md text-sm border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                                        @for (model of availableModels; track model) {
+                                            <option [value]="model">{{model}}</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <button (click)="askAI()" [disabled]="isAiLoading() || isAiApplyingEdits() || !aiPrompt().trim()"
+                                    class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-500 disabled:dark:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+                                    @if (isAiLoading()) {
+                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        <span>Думаю...</span>
+                                    } @else if (isAiApplyingEdits()) {
+                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                        <span>Применяю...</span>
+                                    } @else {
+                                       <span>Отправить</span>
+                                    }
+                                </button>
+                                 @if (aiError()) { <p class="text-rose-500 dark:text-rose-400 text-sm">{{ aiError() }}</p> }
+                            </div>
+                            <div class="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4 flex-grow flex flex-col">
+                                <h3 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-2">Объяснение AI</h3>
+                                <div class="bg-slate-200 dark:bg-slate-900/50 p-3 rounded-lg flex-grow min-h-[150px] flex flex-col justify-center">
+                                    @if (isAiLoading()) {
+                                        <div class="m-auto text-center">
+                                            <svg class="animate-spin mx-auto h-8 w-8 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                            <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Генерирую ответ...</p>
+                                        </div>
+                                    } @else if (aiExplanation()) {
+                                        <div class="overflow-y-auto h-full w-full">
+                                           <p class="text-sm whitespace-pre-wrap">{{ aiExplanation() }}</p>
+                                        </div>
+                                    } @else {
+                                        <div class="text-center text-slate-500 dark:text-slate-400 text-sm">
+                                            <p>Объяснение от AI появится здесь.</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+         </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Command Palette -->
+@if (isCommandPaletteOpen()) {
+<div class="fixed inset-0 z-40 command-palette-backdrop bg-black/30" (click)="isCommandPaletteOpen.set(false)"></div>
+<div class="fixed top-1/4 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl command-palette">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-2xl flex flex-col max-h-[50vh]">
+        <div class="p-2 border-b border-slate-200 dark:border-slate-700">
+            <input type="text" [(ngModel)]="commandPaletteSearch" placeholder="Введите команду..."
+                class="w-full bg-transparent p-2 text-lg text-slate-800 dark:text-slate-200 focus:outline-none">
+        </div>
+        <div class="overflow-y-auto">
+            @for (cmd of filteredCommands(); track cmd.id) {
+                <div (click)="executeCommand(cmd)" class="p-4 cursor-pointer hover:bg-sky-500 hover:text-white dark:hover:bg-sky-600">
+                    {{ cmd.name }}
+                </div>
+            }
+            @if(filteredCommands().length === 0) {
+                 <div class="p-4 text-slate-500">Команд не найдено.</div>
+            }
+        </div>
+    </div>
+</div>
+}
+
+<!-- Editor Context Menu -->
+@if (isContextMenuVisible()) {
+<div class="fixed z-50 min-w-[180px] bg-white dark:bg-slate-800 rounded-md shadow-lg p-1 border border-slate-200 dark:border-slate-700"
+     [style.left.px]="contextMenuPosition().x" [style.top.px]="contextMenuPosition().y">
+    <button (click)="runAiContextMenuAction('explain')" class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-slate-100 dark:hover:bg-slate-700">Объяснить код</button>
+    <button (click)="runAiContextMenuAction('bugs')" class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-slate-100 dark:hover:bg-slate-700">Найти баги</button>
+    <button (click)="runAiContextMenuAction('refactor')" class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-slate-100 dark:hover:bg-slate-700">Рефакторинг</button>
+    <button (click)="runAiContextMenuAction('comment')" class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-slate-100 dark:hover:bg-slate-700">Добавить комментарии</button>
+    <div class="my-1 h-px bg-slate-200 dark:bg-slate-700"></div>
+    <button (click)="formatActiveFile()" class="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-slate-100 dark:hover:bg-slate-700">Форматировать</button>
+</div>
+}
+
+</div>

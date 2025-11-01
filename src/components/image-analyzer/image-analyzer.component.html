@@ -1,0 +1,57 @@
+<h2 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Анализатор изображений</h2>
+<div class="flex flex-col h-full overflow-hidden">
+    <div class="flex-grow overflow-y-auto pr-2 flex flex-col gap-4">
+
+        @if (uploadedImage(); as image) {
+            <div class="relative group">
+                <img [src]="'data:' + imageMimeType() + ';base64,' + image" alt="Загруженное изображение" class="rounded-lg w-full object-contain max-h-48">
+                <button (click)="removeImage()" class="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-black/70 text-white rounded-full transition-opacity opacity-0 group-hover:opacity-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path d="M12.0007 10.5865L16.9504 5.63672L18.3646 7.05093L13.4149 12.0007L18.3646 16.9504L16.9504 18.3646L12.0007 13.4149L7.05093 18.3646L5.63672 16.9504L10.5865 12.0007L5.63672 7.05093L7.05093 5.63672L12.0007 10.5865Z"></path></svg>
+                </button>
+            </div>
+        } @else {
+            <div class="w-full h-32 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg flex flex-col items-center justify-center text-center p-4">
+                <label for="image-upload" class="cursor-pointer text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-8 h-8 mx-auto mb-2"><path d="M4 19H20V12H22V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V12H4V19ZM13 9V16H11V9H4L12 1L20 9H13Z"></path></svg>
+                    <span class="text-sm font-medium">Выберите изображение</span>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden" (change)="onFileSelected($event)">
+                </label>
+            </div>
+        }
+
+        <textarea [(ngModel)]="prompt" placeholder="например, 'Опиши это изображение' или 'Создай HTML-код на основе этого макета'"
+            class="w-full bg-slate-50 dark:bg-slate-800 p-2 rounded-lg font-mono text-sm resize-none border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500" rows="4"></textarea>
+            
+        <button (click)="analyze()" [disabled]="isLoading() || !prompt().trim() || !uploadedImage()"
+            class="w-full bg-sky-600 hover:bg-sky-700 disabled:bg-slate-500 disabled:dark:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
+            @if (isLoading()) {
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span>Анализ...</span>
+            } @else {
+                <span>Отправить</span>
+            }
+        </button>
+
+        @if (error()) { <p class="text-rose-500 dark:text-rose-400 text-sm">{{ error() }}</p> }
+
+        <div class="mt-2 flex-grow flex flex-col">
+            <h3 class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400 mb-2">Ответ AI</h3>
+            <div class="bg-slate-200 dark:bg-slate-900/50 p-3 rounded-lg flex-grow min-h-[150px] flex flex-col justify-center">
+                @if (isLoading()) {
+                    <div class="m-auto text-center">
+                        <svg class="animate-spin mx-auto h-8 w-8 text-sky-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Анализирую изображение...</p>
+                    </div>
+                } @else if (result()) {
+                    <div class="overflow-y-auto h-full w-full">
+                        <p class="text-sm whitespace-pre-wrap">{{ result() }}</p>
+                    </div>
+                } @else {
+                    <div class="text-center text-slate-500 dark:text-slate-400 text-sm">
+                        <p>Результат анализа появится здесь.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
